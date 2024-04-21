@@ -13,10 +13,10 @@
 <div class="bg-image"></div>
 <div class="bg-main">
 <nav class="navbar navbar-light bg-light">
-<h1>Миссия Колонизация Марса</h1>
+<h1>Журнал 1259</h1>
     {% if current_user.is_authenticated %}
 
-    <a class="navbar-brand" href="/logout">{{ current_user.name + ' ' + current_user.surname}}</a>
+    <a class="navbar-brand" href="/logout">{{ current_user.login}}</a>
     {% else %}
         <p>
             <a class="btn btn-primary " href="/register">Зарегистрироваться</a>

@@ -25,27 +25,32 @@ def logout():
     return redirect('/login')
 
 
-@app.route('/a', methods=['GET', 'POST'])
-def check():
-    return render_template('base2.html', title='test')
-
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect('/authorized')
+        return redirect('/main_page')
     form = LoginForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
         user = db_sess.query(User).filter(User.login == form.login.data).first()
         if user and user.check_password(form.password.data):
             login_user(user, remember=form.remember_me.data)
-            return redirect("/mainpage")
+            return redirect("/main_page")
         return render_template('login.html',
                                message="Неправильный логин или пароль",
                                form=form)
     return render_template('login.html', title='Авторизация', form=form)
 
+
+@app.route('/main_page', methods=['GET', 'POST'])
+def main_page():
+    if request.method == 'POST':
+        f = request.files['file']
+        f = f.read()
+        with open("../diary_files/Diary.xlsx", 'wb') as file:
+            file.write(f)
+        return "Форма отправлена"
+    return render_template('main_page.html', title='Главная страница')
 
 # @app.route('/authorized', methods=['GET', 'POST'])
 # def main():
