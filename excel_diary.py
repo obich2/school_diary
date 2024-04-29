@@ -4,9 +4,7 @@ from teachers_dict import teachers_dict
 import openpyxl
 
 # load excel with its path
-wrkbk = openpyxl.load_workbook("diary_files/Diary.xlsx")
 
-ws = wrkbk.active
 answer = {
     "classes": {
 
@@ -63,7 +61,6 @@ answer = {
 }
 
 
-
 def add_class_to_dict(class_name):
     answer["classes"][class_name] = {
         "Понедельник": [{"subject": "", "teacher": "", "classroom": ""} for n in range(1, 9)],
@@ -73,42 +70,49 @@ def add_class_to_dict(class_name):
         "Пятница": [{"subject": "", "teacher": "", "classroom": ""} for n in range(1, 8)]
     }
 
+
 def insert_lesson_data(current_school_class, current_day, lesson_data):
-    print(lesson_data)
     days_of_the_week = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница"]
     subject = lesson_data[0]
-    classrom = lesson_data[1]
+    try:
+        classrom = lesson_data[1]
+    except Exception as e:
+        print(current_school_class, current_day, lesson_data)
     teacher = lesson_data[2:]
     lesson_number = counter // 8
     if lesson_number == 1:
         current_day += 1
-    lesson = answer["classes"][current_school_class][days_of_the_week[current_day]][lesson_number - 1]       #мб изменить и ускорить алгоритм
+    lesson = answer["classes"][current_school_class][days_of_the_week[current_day]][
+        lesson_number - 1]  # мб изменить и ускорить алгоритм
     lesson['lesson'] = subject
     lesson['classrom'] = classrom
     lesson['teacher'] = teacher
 
+
 # iterate through excel and display data
+wrkbk = openpyxl.load_workbook("diary_files/Diary2.xlsx")
+ws = wrkbk.active
 filled_columns = [i.coordinate for i in list(ws.rows)[0]][2:]
-print(filled_columns)
-wrkbk2 = openpyxl.load_workbook("diary_files/Diary2.xlsx")
+
+
 counter = 0
 current_day = -1
 current_school_class = ''
-ws2 = wrkbk2.active
+ws2 = wrkbk.active
 for column in filled_columns:
     for cell in ws2[column[:-1]]:
-
-        if counter == 0:
+        if counter % 40 == 0:
             current_school_class = cell.value
             add_class_to_dict(current_school_class)
-            counter += 1
         else:
             if cell.value is not None and cell.value != 'УПК':
                 lesson_data = cell.value.split()
-                lesson_number = counter // 8
+                lesson_number = counter % 8
                 if lesson_number == 1:
                     current_day += 1
                 insert_lesson_data(current_school_class, current_day, lesson_data)
+        counter += 1
+
 
 # for row in ws.iter_rows(min_row=3, max_col=37, min_col=2, max_row=51, values_only=True):
 #     teacher = row[0]
