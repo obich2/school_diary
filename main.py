@@ -1,12 +1,17 @@
 import json
+import logging
 
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from flask import Flask, redirect, render_template, abort, request
+from flask import Flask, redirect, render_template, abort, request, jsonify
 from forms.loginform import LoginForm
 from forms.registerform import RegisterForm
 from data import db_session
 from data.users import User
-from alice import handler
+from alice import handle_dialog
+logging.basicConfig(level=logging.INFO)
+
+
+sessionStorage = {}
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '9vTgySlnidzBGrf'
@@ -55,75 +60,6 @@ def main_page():
         return "Форма отправлена"
     return render_template('main_page.html', title='Главная страница')
 
-
-# @app.route('/authorized', methods=['GET', 'POST'])
-# def main():
-#     db_sess = db_session.create_session()
-#     jobs = db_sess.query(Jobs).all()
-#     query = db_sess.query(User)
-#     crew_members = []
-#     for user in db_sess.query(User).all():
-#         crew_members.append((user.surname, user.name))
-#
-#     return render_template('jobs.html', jobs=jobs, crew=crew_members)
-#
-#
-# @app.route('/add_jobs', methods=['GET', 'POST'])
-# @login_required
-# def add_jobs():
-#     form = JobsForm()
-#     if form.validate_on_submit():
-#         db_sess = db_session.create_session()
-#         jobs = Jobs()
-#         jobs.job = form.job.data
-#         jobs.team_leader = form.team_leader.data
-#         jobs.work_size = form.work_size.data
-#         jobs.collaborators = form.collaborators.data
-#         jobs.is_finished = form.is_finished.data
-#         current_user.jobs.append(jobs)
-#         db_sess.merge(current_user)
-#         db_sess.commit()
-#         return redirect('/authorized')
-#     return render_template('add_jobs.html', title='Постановка задачи',
-#                            form=form)
-#
-#
-# @app.route('/add_jobs/<int:id>', methods=['GET', 'POST'])
-# @login_required
-# def edit_news(id):
-#     form = JobsForm()
-#     if request.method == "GET":
-#         db_sess = db_session.create_session()
-#         jobs = db_sess.query(Jobs).filter(Jobs.id == id,
-#                                           ).first()
-#         if jobs:
-#             form.job.data = jobs.job
-#             form.team_leader.data = jobs.team_leader
-#             form.work_size.data = jobs.work_size
-#             form.collaborators.data = jobs.collaborators
-#             form.is_finished.data = jobs.is_finished
-#         else:
-#             abort(404)
-#     if form.validate_on_submit():
-#         db_sess = db_session.create_session()
-#         jobs = db_sess.query(Jobs).filter(Jobs.id == id,
-#                                           ).first()
-#         if jobs:
-#             jobs.job = form.job.data
-#             jobs.team_leader = form.team_leader.data
-#             jobs.work_size = form.work_size.data
-#             jobs.collaborators = form.collaborators.data
-#             jobs.is_finished = form.is_finished.data
-#             db_sess.commit()
-#             return redirect('/authorized')
-#         else:
-#             abort(404)
-#     return render_template('add_jobs.html',
-#                            title='Редактирование задания',
-#                            form=form
-#                            )
-#
-#
 @app.route('/register', methods=['GET', 'POST'])
 def reqister():
     form = RegisterForm()
@@ -150,22 +86,26 @@ def reqister():
 
 @app.route('/post', methods=['POST'])
 def main():
-    return json.dumps(handler(request.json, None))
+    logging.info(f'Request: {request.json!r}')
+    response = {
+        "session": request.json['session'],
+        "version": request.json['version'],
+        "response": {
+            "end_session": False,
+            "session_state": {
+        "user_class": 0}
+        }
+    }
 
-#
-#
-# @app.route('/jobs_delete/<int:id>', methods=['GET', 'POST'])
-# @login_required
-# def news_delete(id):
-#     db_sess = db_session.create_session()
-#     jobs = db_sess.query(Jobs).filter(Jobs.id == id,
-#                                       ).first()
-#     if jobs:
-#         db_sess.delete(jobs)
-#         db_sess.commit()
-#     else:
-#         abort(404)
-#     return redirect('/authorized')
+    handle_dialog(request.json, response)
+
+    logging.info(f'Response:  {response!r}')
+
+    # Преобразовываем в JSON и возвращаем
+    response['response']['tts'] = response['response']['text']
+    return jsonify(response)
+
+
 
 
 if __name__ == '__main__':
