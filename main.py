@@ -1,9 +1,12 @@
+import json
+
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from flask import Flask, redirect, render_template, abort, request
 from forms.loginform import LoginForm
 from forms.registerform import RegisterForm
 from data import db_session
 from data.users import User
+from alice import handler
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '9vTgySlnidzBGrf'
@@ -51,6 +54,7 @@ def main_page():
             file.write(f)
         return "Форма отправлена"
     return render_template('main_page.html', title='Главная страница')
+
 
 # @app.route('/authorized', methods=['GET', 'POST'])
 # def main():
@@ -143,6 +147,10 @@ def reqister():
         return redirect('/login')
     return render_template('register.html', title='Регистрация', form=form)
 
+
+@app.route('/post', methods=['POST'])
+def main():
+    return json.dumps(handler(request.json, None))
 
 #
 #

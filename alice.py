@@ -15,7 +15,7 @@ def unknown_command(req, res):
         'tetx'] = 'Я навык, у которого вы можете получить различную информацию об обитателях 1259'  # переделать
 
 
-def hanlder(event, context):
+def handler(event, context):
     intents = {
         "which_lesson": which_lesson,
         "get_diary": get_diary,
@@ -29,3 +29,8 @@ def hanlder(event, context):
         },
         'session_state': event.get('state', {}).get('session', {})
     }
+    try:
+        intents[list(event['request']['nlu']['intents'].keys())[0]](event, response)
+    except IndexError:
+        unknown_command(event, response)
+    response['response']['tts'] = response['text']
