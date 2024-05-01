@@ -2,12 +2,15 @@ import json
 
 import pymorphy2
 import datetime
+
 current_time = datetime.datetime.now().time()
 print(str(current_time) > '18:00')
+
+
 def request_day_of_the_week(days: int):
     today = datetime.datetime.today()
     request_day = today + datetime.timedelta(days=days)
-    return request_day.weekday() if  0 <= request_day.weekday() < 5 else False
+    return request_day.weekday() if 0 <= request_day.weekday() < 5 else False
 
 
 def which_lesson(req, res, user_class):
@@ -29,7 +32,7 @@ def which_lesson(req, res, user_class):
 
     slots = req['request']['nlu']['intents']['which_lesson']['slots']
     next = slots.get('next', {}).get('value', '')
-    lesson_number = slots.get('lesson_number', {}).get('value', '')
+    lesson_number = slots.get('count', {}).get('value', '')
     when = slots.get('when', {}).get('value', '')
     if next:
         next = next_to_lesson[next]
@@ -53,8 +56,11 @@ def which_lesson(req, res, user_class):
         request_day = request_day_of_the_week(0)
     with open('diary.json', mode='r', encoding="UTF-8") as file:
         diary_dict = json.load(file)
-        response_lesson = diary_dict['classes'][user_class][lesson_number]
-        res['response']['text'] = response_lesson
+        response_lesson = diary_dict['classes'][user_class][str(request_day)][lesson_number]  # ПЕРЕДЕЛАЙ ЭТОТ СТР
+        res['response'][
+            'text'] = f'Урок - {" ".join(response_lesson["subject"])}. Учитель - {" ".join(response_lesson["teacher"])}. Кабинет - {response_lesson["classroom"][1:-1]}' #передалть джоины и сделать чтобы все было норм в джсоне
+
+        print(response_lesson)
         return
 
     res['response']['text'] = 'Я вас не поняла. Попробуйте перефразировать ваш вопрос?'
@@ -73,11 +79,18 @@ def unknown_command(req, res):
         'text'] = 'Я навык, у которого вы можете получить различную информацию об обитателях 1259'  # переделать
 
 
+def help_bot(req, res, fix):
+    res['response']['text'] = 'Привет! Ответь на вопрос в каком ты классе, если ты еще не ответил. Если уже ответил, ' \
+                              'то ты можешь спросить "Какой первый/второй/третий и так далее уроки". Пока что ' \
+                              'функционал очень маленький и работает только для 10и класса'
+
+
 def handle_dialog(req, res):
     intents = {
         "which_lesson": which_lesson,
         "get_diary": get_diary,
-        "teacher_subject": teacher_subject
+        "teacher_subject": teacher_subject,
+        "help": help_bot
     }
     user_id = req['session']['user_id']
 
@@ -91,8 +104,11 @@ def handle_dialog(req, res):
                 res['response']['text'] = f'ООооо, так ты из {res["session_state"]["user_class"]}'
                 return
     try:
-        if res['session_state']['user_class'] == 0 and list(req['request']['nlu']['intents'].keys())[0] in ['which_lesson']:
-            res['response']['text'] = 'Чтобы узнать данную информацию, скажите для какого класса её получать, а потом повторите этот запрос'
+        if res['session_state']['user_class'] == 0 and list(req['request']['nlu']['intents'].keys())[0] in [
+            'which_lesson']:
+            res['response'][
+                'text'] = 'Чтобы узнать данную информацию, скажите для какого класса её получать, а потом повторите ' \
+                          'этот запрос'
         else:
             intents[list(req['request']['nlu']['intents'].keys())[0]](req, res, res['session_state']['user_class'])
     except IndexError:
