@@ -64,11 +64,11 @@ answer = {
 
 def add_class_to_dict(class_name):
     answer["classes"][class_name] = {
-        "Понедельник": [{"subject": "", "teacher": "", "classroom": ""} for n in range(1, 9)],
-        "Вторник": [{"subject": "", "teacher": "", "classroom": ""} for n in range(1, 8)],
-        "Среда": [{"subject": "", "teacher": "", "classroom": ""} for n in range(1, 8)],
-        "Четверг": [{"subject": "", "teacher": "", "classroom": ""} for n in range(1, 8)],
-        "Пятница": [{"subject": "", "teacher": "", "classroom": ""} for n in range(1, 8)]
+        0: [{"subject": "", "teacher": "", "classroom": ""} for n in range(1, 9)],
+        1: [{"subject": "", "teacher": "", "classroom": ""} for n in range(1, 8)],
+        2: [{"subject": "", "teacher": "", "classroom": ""} for n in range(1, 8)],
+        3: [{"subject": "", "teacher": "", "classroom": ""} for n in range(1, 8)],
+        4: [{"subject": "", "teacher": "", "classroom": ""} for n in range(1, 8)]
     }
 
 
@@ -78,7 +78,6 @@ def insert_lesson_data(current_school_class, current_day, lesson_data, lesson_nu
     classroom = ''
     teacher = ''
     if current_school_class != 'УПК':
-        days_of_the_week = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница"]
 
         for i, j in enumerate(lesson_data):
             if j[0] == '(':
@@ -86,7 +85,7 @@ def insert_lesson_data(current_school_class, current_day, lesson_data, lesson_nu
                 classroom = lesson_data[i]
                 teacher = lesson_data[i+1:]
                 break
-        lesson = answer["classes"][current_school_class][days_of_the_week[current_day]][
+        lesson = answer["classes"][current_school_class][current_day][
             lesson_number - 1]  # мб изменить и ускорить алгоритм
         lesson['subject'] = subject
         lesson['classroom'] = classroom

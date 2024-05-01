@@ -92,10 +92,12 @@ def main():
         "version": request.json['version'],
         "response": {
             "end_session": False,
-            "session_state": {
-        "user_class": 0}
-        }
+        },
+        'session_state': request.json.get('state', {}).get('session', {})
     }
+    if not response['session_state']:
+        response['session_state'] = {"user_class": 0}
+
 
     handle_dialog(request.json, response)
 
