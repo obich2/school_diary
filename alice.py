@@ -1,5 +1,5 @@
 import json
-
+from excel_diary import all_classes
 import pymorphy2
 import datetime
 
@@ -11,6 +11,14 @@ def request_day_of_the_week(days: int):
     today = datetime.datetime.today()
     request_day = today + datetime.timedelta(days=days)
     return request_day.weekday() if 0 <= request_day.weekday() < 5 else False
+
+
+def get_lesson_from_json(weekday: int, user_class, lesson_number, res):
+    with open('diary.json', mode='r', encoding="UTF-8") as file:
+        diary_dict = json.load(file)
+        response_lesson = diary_dict['classes'][user_class][str(weekday)][lesson_number]  # ПЕРЕДЕЛАЙ ЭТОТ СТР
+        res['response'][
+            'text'] = f'Урок - {" ".join(response_lesson["subject"])}. Учитель - {" ".join(response_lesson["teacher"])}. Кабинет - {response_lesson["classroom"][1:-1]}'  # передалть джоины и сделать чтобы все было норм в джсоне
 
 
 def which_lesson(req, res, user_class):
@@ -48,19 +56,18 @@ def which_lesson(req, res, user_class):
         for i in req['request']['nlu']['entities']:
             if i['type'] == 'YANDEX.DATETIME':
                 when = i['value']['day']
+        print(when)
         request_day = request_day_of_the_week(when)
-        if not request_day:
-            res['response']['text'] = 'УРААААА!!! Завтра не нужно идти в школу!'
+        print(request_day)
+        print(request_day)
+        if type(request_day) is not int:
+            res['response']['text'] = 'УРААААА!!! В этот день не нужно идти в школу!'
+            return
+        else:
+            get_lesson_from_json(request_day, user_class, lesson_number, res)
             return
     else:
-        request_day = request_day_of_the_week(0)
-    with open('diary.json', mode='r', encoding="UTF-8") as file:
-        diary_dict = json.load(file)
-        response_lesson = diary_dict['classes'][user_class][str(request_day)][lesson_number]  # ПЕРЕДЕЛАЙ ЭТОТ СТР
-        res['response'][
-            'text'] = f'Урок - {" ".join(response_lesson["subject"])}. Учитель - {" ".join(response_lesson["teacher"])}. Кабинет - {response_lesson["classroom"][1:-1]}' #передалть джоины и сделать чтобы все было норм в джсоне
-
-        print(response_lesson)
+        get_lesson_from_json(request_day_of_the_week(0), user_class, lesson_number, res)
         return
 
     res['response']['text'] = 'Я вас не поняла. Попробуйте перефразировать ваш вопрос?'
@@ -82,7 +89,13 @@ def unknown_command(req, res):
 def help_bot(req, res, fix):
     res['response']['text'] = 'Привет! Ответь на вопрос в каком ты классе, если ты еще не ответил. Если уже ответил, ' \
                               'то ты можешь спросить "Какой первый/второй/третий и так далее уроки". Пока что ' \
-                              'функционал очень маленький и работает только для 10и класса'
+                              'функционал очень маленький'
+
+
+def call_schedule(req, res, fix):
+    res['response']['text'] = ('Первый урок: 8:30-9:15\nВторой урок: 9:30-10:15\nТретий урок: 10:30-11:15\nЧетвёртый '
+                               'урок: 11:35-12:20\nПятый урок: 12:40-13:25\nШестой урок: 13:45-14:30\nСедьмой урок: '
+                               '14:45-15:30\nВосьмой урок: 15:45-16:30')
 
 
 def handle_dialog(req, res):
@@ -90,7 +103,8 @@ def handle_dialog(req, res):
         "which_lesson": which_lesson,
         "get_diary": get_diary,
         "teacher_subject": teacher_subject,
-        "help": help_bot
+        "help": help_bot,
+        "call_schedule": call_schedule
     }
     user_id = req['session']['user_id']
 
@@ -98,7 +112,7 @@ def handle_dialog(req, res):
         res['response']['text'] = 'Привет, в каком ты классе?'
         return
     if res['session_state']['user_class'] == 0:
-        for school_class in ['10и']:
+        for school_class in all_classes:
             if school_class in req['request']['original_utterance'].lower():
                 res['session_state']['user_class'] = school_class
                 res['response']['text'] = f'ООооо, так ты из {res["session_state"]["user_class"]}'

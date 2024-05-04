@@ -1,6 +1,6 @@
 import json
 import logging
-
+from excel_diary import make_json
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from flask import Flask, redirect, render_template, abort, request, jsonify
 from forms.loginform import LoginForm
@@ -8,8 +8,8 @@ from forms.registerform import RegisterForm
 from data import db_session
 from data.users import User
 from alice import handle_dialog
-logging.basicConfig(level=logging.INFO)
 
+logging.basicConfig(level=logging.INFO)
 
 sessionStorage = {}
 
@@ -55,10 +55,12 @@ def main_page():
     if request.method == 'POST':
         f = request.files['file']
         f = f.read()
-        with open("../diary_files/Diary.xlsx", 'wb') as file:
+        with open("diary_files/Diary.xlsx", 'wb') as file:
             file.write(f)
-        return "Форма отправлена"
+        make_json()
+        return render_template('main_page.html', title='Главная страница', success='Файл был загружен в систему')
     return render_template('main_page.html', title='Главная страница')
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def reqister():
@@ -98,7 +100,6 @@ def main():
     if not response['session_state']:
         response['session_state'] = {"user_class": 0}
 
-
     handle_dialog(request.json, response)
 
     logging.info(f'Response:  {response!r}')
@@ -106,8 +107,6 @@ def main():
     # Преобразовываем в JSON и возвращаем
     response['response']['tts'] = response['response']['text']
     return jsonify(response)
-
-
 
 
 if __name__ == '__main__':

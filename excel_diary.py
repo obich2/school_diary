@@ -83,7 +83,7 @@ def insert_lesson_data(current_school_class, current_day, lesson_data, lesson_nu
             if j[0] == '(':
                 subject = lesson_data[:i]
                 classroom = lesson_data[i]
-                teacher = lesson_data[i+1:]
+                teacher = lesson_data[i + 1:]
                 break
         lesson = answer["classes"][current_school_class][current_day][
             lesson_number - 1]  # мб изменить и ускорить алгоритм
@@ -92,28 +92,34 @@ def insert_lesson_data(current_school_class, current_day, lesson_data, lesson_nu
         lesson['teacher'] = teacher
 
 
-# iterate through excel and display data
-wrkbk = openpyxl.load_workbook("diary_files/Diary.xlsx")
-ws = wrkbk.active
-filled_columns = [i.coordinate for i in list(ws.rows)[0]][2:]
+all_classes = []
 
 
-current_school_class = ''
-ws2 = wrkbk.active
-for column in filled_columns:
-    for index, cell in enumerate(ws2[column[:-1]]):
-        if index == 0:
-            current_school_class = cell.value
-            print(cell.value)
-            current_day = -1
-            add_class_to_dict(current_school_class)
-        else:
-            if cell.value is not None and cell.value != 'УПК':
-                lesson_data = cell.value.split()
-                lesson_number = index % 8
-                if lesson_number == 1:
-                    current_day += 1
-                insert_lesson_data(current_school_class, current_day, lesson_data, lesson_number)
+def make_json():
+    # iterate through excel and display data
+    wrkbk = openpyxl.load_workbook("diary_files/Diary.xlsx")
+    ws = wrkbk.active
+    filled_columns = [i.coordinate for i in list(ws.rows)[0]][2:]
 
-with open("diary.json", "w", encoding="utf-8") as file:
-    json.dump(answer, file, ensure_ascii=False, indent=2)
+    current_school_class = ''
+    ws2 = wrkbk.active
+    for column in filled_columns:
+        for index, cell in enumerate(ws2[column[:-1]]):
+            if index == 0:
+                current_school_class = cell.value
+                print(cell.value)
+                current_day = -1
+                add_class_to_dict(current_school_class)
+                all_classes.append(current_school_class)
+            else:
+                if cell.value is not None and cell.value != 'УПК':
+                    lesson_data = cell.value.split()
+                    lesson_number = index % 8
+                    if lesson_number == 1:
+                        current_day += 1
+                    insert_lesson_data(current_school_class, current_day, lesson_data, lesson_number)
+
+    with open("diary.json", "w", encoding="utf-8") as file:
+        json.dump(answer, file, ensure_ascii=False, indent=2)
+
+
