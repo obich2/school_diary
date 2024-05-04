@@ -60,7 +60,7 @@ def which_lesson(req, res, user_class):
         request_day = request_day_of_the_week(when)
         print(request_day)
         print(request_day)
-        if type(request_day) is not int:
+        if type(request_day) is False:
             res['response']['text'] = 'УРААААА!!! В этот день не нужно идти в школу!'
             return
         else:
