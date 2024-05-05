@@ -7,6 +7,7 @@ from forms.loginform import LoginForm
 from forms.registerform import RegisterForm
 from data import db_session
 from data.users import User
+import pymorphy2
 from alice import handle_dialog
 
 logging.basicConfig(level=logging.INFO)

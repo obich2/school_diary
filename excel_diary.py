@@ -111,6 +111,7 @@ def make_json():
                 current_day = -1
                 add_class_to_dict(current_school_class)
                 all_classes.append(current_school_class)
+                print(all_classes)
             else:
                 if cell.value is not None and cell.value != 'УПК':
                     lesson_data = cell.value.split()

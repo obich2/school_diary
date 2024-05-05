@@ -4,21 +4,51 @@ import pymorphy2
 import datetime
 
 current_time = datetime.datetime.now().time()
-print(str(current_time) > '18:00')
+number_to_string = {
+    0: 'первый',
+    1: 'второй',
+    2: 'третий',
+    3: 'четвертый',
+    4: 'пятый',
+    5: 'шестой',
+    6: 'седьмой',
+    7: 'восьмой',
+    8: 'девятый'
+}
 
 
-def request_day_of_the_week(days: int):
+def request_day_of_the_week(days: int, month=0):
     today = datetime.datetime.today()
-    request_day = today + datetime.timedelta(days=days)
-    return request_day.weekday() if 0 <= request_day.weekday() < 5 else False
+    if month:
+        current_year = today.year
+        request_date = datetime.datetime(current_year, month, days)
+    else:
+        today = datetime.datetime.today()
+        request_date = today + datetime.timedelta(days=days)
+    return request_date.weekday() if 0 <= request_date.weekday() < 5 else False
 
 
 def get_lesson_from_json(weekday: int, user_class, lesson_number, res):
-    with open('diary.json', mode='r', encoding="UTF-8") as file:
-        diary_dict = json.load(file)
-        response_lesson = diary_dict['classes'][user_class][str(weekday)][lesson_number]  # ПЕРЕДЕЛАЙ ЭТОТ СТР
-        res['response'][
-            'text'] = f'Урок - {" ".join(response_lesson["subject"])}. Учитель - {" ".join(response_lesson["teacher"])}. Кабинет - {response_lesson["classroom"][1:-1]}'  # передалть джоины и сделать чтобы все было норм в джсоне
+    if lesson_number is None:
+        with open('diary.json', mode='r', encoding="UTF-8") as file:
+            diary_dict = json.load(file)
+
+            for i in range(0, 8):
+                response_lesson = diary_dict['classes'][user_class][str(weekday)][i]  # ПЕРЕДЕЛАЙ ЭТОТ СТР
+                if response_lesson['subject']:
+                    res['response'][
+                        'text'] = res['response'].get('text', '') + f'{number_to_string[i].capitalize()} урок - {" ".join(response_lesson["subject"])}. Учитель - {" ".join(response_lesson["teacher"])}. Кабинет - {response_lesson["classroom"][1:-1]}\n'  # передалть джоины и сделать чтобы все было норм в джсоне
+                else:
+                    res['response'][
+                        'text'] = res['response'].get('text',
+                                                      '') + f'{number_to_string[i].capitalize()} урок - нет\n'  # передалть джоины и сделать чтобы все было норм в джсоне
+    else:
+        with open('diary.json', mode='r', encoding="UTF-8") as file:
+            diary_dict = json.load(file)
+            print(user_class, weekday, lesson_number)
+            response_lesson = diary_dict['classes'][user_class][str(weekday)][lesson_number]  # ПЕРЕДЕЛАЙ ЭТОТ СТР
+            res['response'][
+                'text'] = f'Урок - {" ".join(response_lesson["subject"])}. Учитель - {" ".join(response_lesson["teacher"])}. Кабинет - {response_lesson["classroom"][1:-1]}'  # передалть джоины и сделать чтобы все было норм в джсоне
 
 
 def which_lesson(req, res, user_class):
@@ -37,7 +67,17 @@ def which_lesson(req, res, user_class):
         'последний': -1,
 
     }
-
+    string_to_number = {
+        'перв': 0,
+        'втор': 1,
+        'трет': 2,
+        'четверт': 3,
+        'пят': 4,
+        'шест': 5,
+        'седьм': 6,
+        'восьм': 7,
+        'девят': 8
+    }
     slots = req['request']['nlu']['intents']['which_lesson']['slots']
     next = slots.get('next', {}).get('value', '')
     lesson_number = slots.get('count', {}).get('value', '')
@@ -45,39 +85,74 @@ def which_lesson(req, res, user_class):
     if next:
         next = next_to_lesson[next]
     if lesson_number:
-        for i in req['request']['nlu']['tokens']:
-            if i.isdigit():
-                lesson_number = int(i) - 1
-
+        lesson_number = string_to_number[lesson_number[:-2]]
         # lesson_number = word_to_count[lesson_number]
         # morph = pymorphy2.MorphAnalyzer()                 // мб мне не понадобиться pymorphy потому что,
         # у меня в запросе будут только первый, второй и так далее lesson_number = morph.parse(lesson_number)[0].normal_form
     if when:
         for i in req['request']['nlu']['entities']:
             if i['type'] == 'YANDEX.DATETIME':
-                when = i['value']['day']
-        print(when)
-        request_day = request_day_of_the_week(when)
-        print(request_day)
-        print(request_day)
-        if type(request_day) is False:
+                if i['value']['day_is_relative']:
+                    when = i['value']['day']
+                    request_day = request_day_of_the_week(when)
+
+                else:
+                    day = i['value']['day']
+                    month = i['value']['month']
+                    request_day = request_day_of_the_week(day, month)
+
+                break
+        if request_day is False:
             res['response']['text'] = 'УРААААА!!! В этот день не нужно идти в школу!'
             return
         else:
             get_lesson_from_json(request_day, user_class, lesson_number, res)
             return
     else:
-        get_lesson_from_json(request_day_of_the_week(0), user_class, lesson_number, res)
+        request_day = request_day_of_the_week(0)
+        if 0 <= request_day >= 4:
+            get_lesson_from_json(request_day_of_the_week(0), user_class, lesson_number, res)
+        else:
+            res['response']['text'] = 'УРААААА!!! В этот день не нужно идти в школу!'
         return
 
-    res['response']['text'] = 'Я вас не поняла. Попробуйте перефразировать ваш вопрос?'
+
+def get_diary(req, res, user_class):
+    slots = req['request']['nlu']['intents']['get_diary']['slots']
+    when = slots.get('when', {}).get('value', '')
+    lesson_number = None
+    # lesson_number = word_to_count[lesson_number]
+    # morph = pymorphy2.MorphAnalyzer()                 // мб мне не понадобиться pymorphy потому что,
+    # у меня в запросе будут только первый, второй и так далее lesson_number = morph.parse(lesson_number)[0].normal_form
+    if when:
+        for i in req['request']['nlu']['entities']:
+            if i['type'] == 'YANDEX.DATETIME':
+                if i['value']['day_is_relative']:
+                    when = i['value']['day']
+                    request_day = request_day_of_the_week(when)
+
+                else:
+                    day = i['value']['day']
+                    month = i['value']['month']
+                    request_day = request_day_of_the_week(day, month)
+
+                break
+        if request_day is False:
+            res['response']['text'] = 'УРААААА!!! В этот день не нужно идти в школу!'
+            return
+        else:
+            get_lesson_from_json(request_day, user_class, lesson_number, res)
+            return
+    else:
+        request_day = request_day_of_the_week(0)
+        if 0 <= request_day >= 4:
+            get_lesson_from_json(request_day_of_the_week(0), user_class, lesson_number, res)
+        else:
+            res['response']['text'] = 'УРААААА!!! В этот день не нужно идти в школу!'
+        return
 
 
-def get_diary(req, res):
-    pass
-
-
-def teacher_subject(req, res):
+def teacher(req, res, fix):
     pass
 
 
@@ -102,7 +177,7 @@ def handle_dialog(req, res):
     intents = {
         "which_lesson": which_lesson,
         "get_diary": get_diary,
-        "teacher_subject": teacher_subject,
+        "teacher": teacher,
         "help": help_bot,
         "call_schedule": call_schedule
     }
@@ -112,7 +187,8 @@ def handle_dialog(req, res):
         res['response']['text'] = 'Привет, в каком ты классе?'
         return
     if res['session_state']['user_class'] == 0:
-        for school_class in all_classes:
+        for school_class in ['5а', '5б', '5в', '5г', '5д', '6а', '6б', '6в', '6г', '6д', '7а', '7б', '7г', '7м', '8а',
+                             '8б', '8в', '8г', '8м', '9а', '9в', '9г', '9м', '10а', '10и', '10ф', '11а', '11г', '11ф']:
             if school_class in req['request']['original_utterance'].lower():
                 res['session_state']['user_class'] = school_class
                 res['response']['text'] = f'ООооо, так ты из {res["session_state"]["user_class"]}'
