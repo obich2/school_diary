@@ -33,7 +33,7 @@ def get_lesson_from_json(weekday: int, user_class, lesson_number, res):
         with open('diary.json', mode='r', encoding="UTF-8") as file:
             diary_dict = json.load(file)
 
-            for i in range(0, 8):
+            for i in range(0, 7):
                 response_lesson = diary_dict['classes'][user_class][str(weekday)][i]  # ПЕРЕДЕЛАЙ ЭТОТ СТР
                 if response_lesson['subject']:
                     res['response'][
@@ -201,5 +201,6 @@ def handle_dialog(req, res):
                           'этот запрос'
         else:
             intents[list(req['request']['nlu']['intents'].keys())[0]](req, res, res['session_state']['user_class'])
-    except IndexError:
+    except Exception as e:
+        print(e)
         unknown_command(req, res)
