@@ -33,11 +33,17 @@ def get_lesson_from_json(weekday: int, user_class, lesson_number, res):
         with open('diary.json', mode='r', encoding="UTF-8") as file:
             diary_dict = json.load(file)
 
-            for i in range(0, 7):
-                response_lesson = diary_dict['classes'][user_class][str(weekday)][i]  # ПЕРЕДЕЛАЙ ЭТОТ СТР
-                if response_lesson['subject']:
-                    res['response'][
-                        'text'] = res['response'].get('text', '') + f'{number_to_string[i].capitalize()} урок - {" ".join(response_lesson["subject"])}. Учитель - {" ".join(response_lesson["teacher"])}. Кабинет - {response_lesson["classroom"][1:-1]}\n'  # передалть джоины и сделать чтобы все было норм в джсоне
+            for i in range(0, 8):
+                response_lesson = diary_dict['classes'][user_class][str(weekday)]
+                if len(response_lesson) > i:
+                    response_lesson = diary_dict['classes'][user_class][str(weekday)][i]  # ПЕРЕДЕЛАЙ ЭТОТ СТР
+                    if response_lesson['subject']:
+                        res['response'][
+                            'text'] = res['response'].get('text', '') + f'{number_to_string[i].capitalize()} урок - {" ".join(response_lesson["subject"])}. Учитель - {" ".join(response_lesson["teacher"])}. Кабинет - {response_lesson["classroom"][1:-1]}\n'  # передалть джоины и сделать чтобы все было норм в джсоне
+                    else:
+                        res['response'][
+                            'text'] = res['response'].get('text',
+                                                          '') + f'{number_to_string[i].capitalize()} урок - нет\n'  # передалть джоины и сделать чтобы все было норм в джсоне
                 else:
                     res['response'][
                         'text'] = res['response'].get('text',
